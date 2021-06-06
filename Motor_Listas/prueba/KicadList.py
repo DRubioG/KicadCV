@@ -51,7 +51,8 @@ class KicadList():
             self.buscar_segment(cadena, palabras)
             self.buscar_via(cadena, palabras)
         self.f.close()
+        return self.linea, self.ruta, self.via
     
-if __name__=="__main__":
-    a=KicadList('prueba.kicad_pcb')
-    a.generar_lista()
+#if __name__=="__main__":
+ #   a=KicadList('prueba.kicad_pcb')
+  #  a.generar_lista()
