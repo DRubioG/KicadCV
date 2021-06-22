@@ -115,10 +115,10 @@
     (pad 1 thru_hole circle (at 0.2 -0.3) (size 1.524 1.524) (drill 0.762) (layers *.Cu *.Mask))
   )
 
-  (gr_line (start 93.6 38.9) (end 94.9 15.8) (layer Edge.Cuts) (width 0.05) (tstamp 60B2AFD9))
-  (gr_line (start 127.3 38.7) (end 93.6 38.9) (layer Edge.Cuts) (width 0.05))
-  (gr_line (start 127.5 15.7) (end 127.3 38.7) (layer Edge.Cuts) (width 0.05))
-  (gr_line (start 94.9 15.8) (end 127.5 15.7) (layer Edge.Cuts) (width 0.05))
+  (gr_line (start 90 40) (end 90 15) (layer Edge.Cuts) (width 0.05) (tstamp 60B2AFD9))
+  (gr_line (start 130 40) (end 90 40) (layer Edge.Cuts) (width 0.05))
+  (gr_line (start 130 15) (end 130 40) (layer Edge.Cuts) (width 0.05))
+  (gr_line (start 90 15) (end 130 15) (layer Edge.Cuts) (width 0.05))
 
   (segment (start 117.4 21.5) (end 113.7 25.2) (width 0.25) (layer F.Cu) (net 0))
   (segment (start 117.5 21.5) (end 117.4 21.5) (width 0.25) (layer F.Cu) (net 0))
