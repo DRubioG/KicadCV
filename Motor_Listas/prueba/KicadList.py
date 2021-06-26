@@ -7,7 +7,11 @@ class KicadList():
         self.linea=[]
         self.ruta=[]
         self.via=[]
+        self.module=[]
+        self.pad=[]
         self.d=0
+        self.cont=0
+        self.mod=-1
         self.origen=(10000,100000)
        # def veriable(ent):
         #    for sus in range(len(palabras)):
@@ -79,14 +83,124 @@ class KicadList():
         if cadena.find("via ")!=-1:
             p1x=self.num_natural(palabras[6])-self.origen[0]
             p1y=self.num_natural(palabras[7])-self.origen[1]
-            size=palabras[10]
+            size=palabras[11]
             drill=palabras[15]
             capa1=palabras[19]
             capa2=palabras[20]
             red=palabras[24]
             self.via.append([(p1x, p1y), (capa1, capa2), size, drill, red])
         
+    def buscar_pads(self):
+        lis=[]
+        reg=[]
+        flag=0
+        #print(self.origen)
+        for module in self.module:
+           # self.pad.append([])
+            for module2 in module:
+               # print(module2)
+                if flag==1:
+                    flag=0
+                    ref_x=float(module2[5])
+                    ref_y=float(module2[6])
+                    n_origenx=ref_x-self.origen[0]
+                    n_origeny=ref_y-self.origen[1]
+                  #  print("ref: ", ref_x, ref_y)
+                 #   print("nuevo origen:" ,n_origenx, n_origeny)
+                    
+                if "module" in module2:
+                    flag=1
+                
+                if "pad" in module2:
+                    #reg.append(module2)
+                    #for i in range(len(module2)):
+                    #    print("num: ", i)
+                    #    print("valor: ", module2[i])
+
+                    nombre=module2[5]
+                    tipo=module2[6]
+                    forma=module2[7]
+                 #   print(module2[9], module2[10])
+                    
+                    pos_x=n_origenx-float(module2[9])
+                    pos_y=n_origeny-float(module2[10])
+                    
+                    pos=(pos_x,pos_y)
+                   # print(pos)
+                    if module2[11].isnumeric():
+                        angulo=module2[11]
+                        size_num=13
+                    else:
+                        angulo=0
+                        size_num=12
+                    size=(module2[size_num],module2[size_num+1])
+                    if "thru_hole" in module2:
+                        drill=module2[size_num+3]
+                        capa=module2[size_num+5:]
+                    else:
+                        drill=None
+                        capa=module2[size_num+3:]
+                    
+                    reg.append([nombre, tipo, forma, pos, angulo, size, drill, capa])
+                    
+                    #print(module2)
+            self.pad.append(reg)
+            #print(reg)
+            reg=[]
+           # lis.append(reg)
+            #print(reg)
+            #reg=[]
+            
+       # print(self.pad)
+        return self.pad
+
     def generar_lista(self):
+        lista=[]
+        #palabras2=[]
+        palabras=[]
+        num=0
+        num2=0
+        num3=0
+        #mod=-1
+        c=0
+        m=0
+        for module in self.mensaje:
+            self.cont+=module.count("(")
+            self.cont-=module.count(")")
+            if self.cont==1: 
+                if c!=0:
+                    c=0
+            elif self.cont==2:
+                c=2
+            elif self.cont==3:
+                c=3
+            elif self.cont==4:
+                c=4
+
+            if c>1:
+                if module.find("module ")!=-1:
+                    lista.append([])
+                    m=1
+                    self.mod+=1
+            elif c==0:
+                m=0
+
+            if m==1:
+                lista[self.mod].append(module)
+
+        for cadena in lista:
+            for cadena2 in cadena:
+                cadena2=cadena2.replace("(", "")
+                cadena2=cadena2.replace("\n", "")
+                cadena2=cadena2.replace(")", "")
+                cadena2=cadena2.split(" ", -1)
+                palabras.append(cadena2)
+            self.module.append(palabras)
+            palabras=[]
+
+        
+
+
         for cadena in self.mensaje:
             cadena=cadena.replace("(", " ")
             cadena=cadena.replace(")", " ")
@@ -96,11 +210,11 @@ class KicadList():
             self.buscar_linea(cadena, palabras)
             self.buscar_segment(cadena, palabras)
             self.buscar_via(cadena, palabras)
+        self.buscar_pads()
         self.f.close()
         return self.linea, self.ruta, self.via
     
 if __name__=="__main__":
     a=KicadList('prueba.kicad_pcb')
-    print("ejeucion")
     a.generar_lista()
-    #print(a.linea)
+   # print(a.module_a)

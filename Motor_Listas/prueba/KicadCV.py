@@ -7,6 +7,7 @@ class KicadCV():
         ab=KicadList(file)
         self.linea, self.ruta, self.via=ab.generar_lista()
         self.alto, self.ancho=ab.get_long()
+        self.pad=ab.buscar_pads()
         #self.escalax=1
        # self.escalay=1
         self.offsetx=0
@@ -20,16 +21,16 @@ class KicadCV():
         if escala is not None:
             self.escalax=escala
             self.escalay=escala
-        print("escala x", self.escalax)
-        print("escala y", self.escalay)
+       # print("escala x", self.escalax)
+       # print("escala y", self.escalay)
 
     def reescalar(self, h, w):
         self.escalay=w/self.alto
         self.escalax=h/self.ancho
         #print("escalax: ", self.escalax)
        # print("escalay: ", self.escalay)
-        print("escala x ", self.escalax)
-        print("escalay ", self.escalay)
+      #  print("escala x ", self.escalax)
+      #  print("escalay ", self.escalay)
     
     def offset(self, offset=0, offx=0, offy=0):
         self.offsetx=offx
@@ -41,8 +42,6 @@ class KicadCV():
 
     def pintar_linea(self, img):
         for num_lin in self.linea:
-            print(num_lin[0][0] , num_lin[0][1])
-            print((float(num_lin[0][0])*self.escalax), (float(num_lin[0][1])*self.escalay))
             p1x=round(float(num_lin[0][0])*self.escalax)+self.offsetx
             p1y=round(float(num_lin[0][1])*self.escalay)+self.offsety
             p1=(p1x, p1y)
@@ -66,62 +65,94 @@ class KicadCV():
                 color=(255,0,0)
             cv2.line(img, p1, p2, color, 2)
 
+    def pintar_via(self, img, esc=1, offx=0, offy=0):
+        for num_via in self.via:
+            px=round(float(num_via[0][0])*self.escalax)+self.offsetx
+            py=round(float(num_via[0][1])*self.escalay)+self.offsety
+            p=(px, py)
+            size=round(float(num_via[3])*self.escalax)
+            drill=round(float(num_via[4])*self.escalax)
+            radio=round((size+drill)/2)
+            radio_int=round((size/2))
+            width=size-radio
+            cv2.circle(img, p, radio_int, (0,255,255), radio)
+            cv2.circle(img, p, radio, (0,0,0), width)
+
+    def pintar_pad(self, img):
+        def thru_hole(img, pos, size, drill):
+            px=round(pos[0]*self.escalax)+self.offsetx
+            py=round(pos[1]*self.escalay)+self.offsety
+            p=(px,py)
+            size=round(float(size[0])*self.escalax)
+            drill=round(float(drill)*self.escalax)
+            radio=round((size+drill)/2)
+            radio_int=round((size/2))
+            width=size-radio
+            cv2.circle(img, p, radio, (0,0,255), width)
+            cv2.circle(img, p, radio_int, (0,0,0), -1)
+
+        def smd(img, tipo, pos, size, capa):
+            px=round(pos[0]*self.escalax)+self.offsetx
+            py=round(pos[1]*self.escalay)+self.offsety
+            p=(px,py)
+            
+            if 'F.Cu' in capa:
+                color=(0,0,255)
+            elif 'B.Cu' in capa:
+                color=(255,0,0)
+            if tipo == 'circle':
+                size=round(float(size[0])*self.escalax)
+                cv2.circle(img, p, size, color, -1)
+            elif tipo=='rect':
+                sizex=round(float(size[0])*self.escalax)
+                sizey=round(float(size[1])*self.escalay)
+                size=(sizex, sizey)
+                #print(size)
+                p_rect_x=px-round(sizex/2)
+                p_rect_y=py-round(sizey/2)
+                p_rect=(p_rect_x, p_rect_y)
+                tam=(p_rect_x+sizex, p_rect_y+sizey)
+                print(tam)
+                cv2.rectangle(img, p_rect, tam, color, -1)
+            
+        for module in self.pad:
+            for pad in module:
+               # print(pad)
+                if pad[1] == 'thru_hole':
+                    thru_hole(img, pad[3], pad[5], pad[6])
+                elif pad[1] == 'smd':
+                    smd(img, pad[2], pad[3], pad[5], pad[7])
+
+
+                    
+
+    def localizar_PCB(self, img, tamx=1000, tamy=1000, thres=130, areaMin=9000, areaMax=900000, blur=15):
+        contornos_forma=[]
+        img=cv2.resize(img, (tamx,tamy))
+        imgray=cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        im_gauss = cv2.GaussianBlur(imgray, (blur, blur), 0)
+        imgthreshold = cv2.adaptiveThreshold(im_gauss, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 51, 3)
+        cv2.rectangle(imgthreshold, (1,1), (tamx-1,tamy-1), (0,0,0),3)
+        contours, hierarchy = cv2.findContours(imgthreshold, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        for con in contours:
+            area =cv2.contourArea(con)
+            if areaMin < area < areaMax:
+                x, y, h, w = cv2.boundingRect(con)
+                contornos_forma.append(con)
+        return img, x, y, h, w 
+
 
 if __name__=="__main__":
     #cap=cv2.VideoCapture(0)
-    thres=130
-    areaMin = 9000
-    areaMax = 900000
-    i=0
-    blur=15
-    contornos_forma=[]
     a=KicadCV('prueba.kicad_pcb')
     img=cv2.imread("pruebas/p1.jpg")
-    tamx=1000
-    tamy=1000
-    img=cv2.resize(img, (tamx,tamy))
-    imgray=cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-    im_gauss = cv2.GaussianBlur(imgray, (blur, blur), 0)
-    imgthreshold = cv2.adaptiveThreshold(im_gauss, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 51, 3)
-    cv2.rectangle(imgthreshold, (1,1), (tamx-1,tamy-1), (0,0,0),3)
-    ret=1
-    aream=0
-    areas=0
-    boundm=0
-    if ret !=0:
-        contours, hierarchy = cv2.findContours(imgthreshold, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        #cv2.drawContours(img,contornos_forma, -1, (255,0,255), 20)
-        #print("pinto y coloreo, contornos: ", len(contours))
-        for con in contours:
-           
-            area =cv2.contourArea(con)
-            if area > aream:
-                areas=aream
-                aream=area
-            if areaMin < area < areaMax:
-                x, y, h, w = cv2.boundingRect(con)
-                if h*w > boundm:
-                    boundm=h*w
-                cv2.rectangle(img,(x,y),(x+h, y+w), (255,255,0), 1)
-                contornos_forma.append(con)
-                
-                #print("cumplo el minimo, valor ", area)
-            #cv2.drawContours(img,con, i, (255,0,255), 3) 
-            #cv2.imshow("prueba", img)
-            #i+=1
-    #print(contornos_forma)
-    #cv2.drawContours(img,contornos_forma, -1, (255,0,255), 3)
-    print("area maxima: ", aream)
-    print("area 2a maxima: ", areas)
-    print("bounding maxima: ", boundm)
-    print("height: ", h)
-    print("width: ", w)
-    print("alto: ", a.alto)
-    print("ancho: " , a.ancho)
+    img, x, y, h, w=a.localizar_PCB(img)
     a.offset(offx=x, offy=y)
     a.reescalar(h, w)
     a.pintar_linea(img)
     a.pintar_ruta(img)
+    a.pintar_via(img)
+    a.pintar_pad(img)
     cv2.imshow("prueba", img)
    # cv2.imshow("threshold2", imgthreshold)
     
