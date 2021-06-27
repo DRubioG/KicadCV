@@ -92,10 +92,10 @@ class KicadCV():
             cv2.circle(img, p, radio_int, (0,0,0), -1)
 
         def smd(img, tipo, pos, size, capa):
+            color=(0,0,0)
             px=round(pos[0]*self.escalax)+self.offsetx
             py=round(pos[1]*self.escalay)+self.offsety
             p=(px,py)
-            
             if 'F.Cu' in capa:
                 color=(0,0,255)
             elif 'B.Cu' in capa:
@@ -107,12 +107,19 @@ class KicadCV():
                 sizex=round(float(size[0])*self.escalax)
                 sizey=round(float(size[1])*self.escalay)
                 size=(sizex, sizey)
-                #print(size)
                 p_rect_x=px-round(sizex/2)
                 p_rect_y=py-round(sizey/2)
                 p_rect=(p_rect_x, p_rect_y)
                 tam=(p_rect_x+sizex, p_rect_y+sizey)
-                print(tam)
+                cv2.rectangle(img, p_rect, tam, color, -1)
+            elif tipo=='roundrect':
+                sizex=round(float(size[0])*self.escalax)
+                sizey=round(float(size[1])*self.escalay)
+                size=(sizex, sizey)
+                p_rect_x=px-round(sizex/2)
+                p_rect_y=py-round(sizey/2)
+                p_rect=(p_rect_x, p_rect_y)
+                tam=(p_rect_x+sizex, p_rect_y+sizey)
                 cv2.rectangle(img, p_rect, tam, color, -1)
             
         for module in self.pad:
@@ -126,7 +133,7 @@ class KicadCV():
 
                     
 
-    def localizar_PCB(self, img, tamx=1000, tamy=1000, thres=130, areaMin=9000, areaMax=900000, blur=15):
+    def localizar_PCB(self, img, tamx=1200, tamy=800, thres=130, areaMin=9000, areaMax=900000, blur=15):
         contornos_forma=[]
         img=cv2.resize(img, (tamx,tamy))
         imgray=cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)

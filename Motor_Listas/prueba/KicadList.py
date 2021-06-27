@@ -94,39 +94,30 @@ class KicadList():
         lis=[]
         reg=[]
         flag=0
-        #print(self.origen)
         for module in self.module:
-           # self.pad.append([])
             for module2 in module:
-               # print(module2)
-                if flag==1:
+                
+                if "module" in module2:
+                    flag=1
+                elif flag==1:
                     flag=0
                     ref_x=float(module2[5])
                     ref_y=float(module2[6])
                     n_origenx=ref_x-self.origen[0]
                     n_origeny=ref_y-self.origen[1]
-                  #  print("ref: ", ref_x, ref_y)
-                 #   print("nuevo origen:" ,n_origenx, n_origeny)
-                    
-                if "module" in module2:
-                    flag=1
+
+                
                 
                 if "pad" in module2:
-                    #reg.append(module2)
-                    #for i in range(len(module2)):
-                    #    print("num: ", i)
-                    #    print("valor: ", module2[i])
 
                     nombre=module2[5]
                     tipo=module2[6]
                     forma=module2[7]
-                 #   print(module2[9], module2[10])
                     
                     pos_x=n_origenx-float(module2[9])
                     pos_y=n_origeny-float(module2[10])
                     
                     pos=(pos_x,pos_y)
-                   # print(pos)
                     if module2[11].isnumeric():
                         angulo=module2[11]
                         size_num=13
