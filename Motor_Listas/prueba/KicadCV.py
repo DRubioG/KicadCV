@@ -88,7 +88,7 @@ class KicadCV():
             radio=round((size+drill)/2)
             radio_int=round((size/2))
             width=size-radio
-            cv2.circle(img, p, radio, (0,0,255), width)
+            cv2.circle(img, p, radio, (0,255,255), width)
             cv2.circle(img, p, radio_int, (0,0,0), -1)
 
         def smd(img, tipo, pos, size, capa):
@@ -133,12 +133,18 @@ class KicadCV():
 
                     
 
-    def localizar_PCB(self, img, tamx=1200, tamy=800, thres=130, areaMin=9000, areaMax=900000, blur=15):
+    def localizar_PCB(self, img, tamx=1200, tamy=800, thres=140, areaMin=9000, areaMax=900000, blur=15):
         contornos_forma=[]
         img=cv2.resize(img, (tamx,tamy))
         imgray=cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
         im_gauss = cv2.GaussianBlur(imgray, (blur, blur), 0)
-        imgthreshold = cv2.adaptiveThreshold(im_gauss, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 51, 3)
+        ret, imgthreshold=cv2.threshold(im_gauss, thres, 255, cv2.THRESH_BINARY)
+        cv2.imshow("threshold", imgthreshold)
+   #     print("ret ", ret)
+        if ret==0:
+            return "error", 0,0,0,0
+   #     imgthreshold = cv2.adaptiveThreshold(im_gauss, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 51, 3)
+        x, y, h, w=0,0,0,0
         cv2.rectangle(imgthreshold, (1,1), (tamx-1,tamy-1), (0,0,0),3)
         contours, hierarchy = cv2.findContours(imgthreshold, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         for con in contours:
@@ -150,34 +156,44 @@ class KicadCV():
 
 
 if __name__=="__main__":
-    #cap=cv2.VideoCapture(0)
+    cap=cv2.VideoCapture(1)
     a=KicadCV('prueba.kicad_pcb')
-    img=cv2.imread("pruebas/p1.jpg")
-    img, x, y, h, w=a.localizar_PCB(img)
-    a.offset(offx=x, offy=y)
-    a.reescalar(h, w)
-    a.pintar_linea(img)
-    a.pintar_ruta(img)
-    a.pintar_via(img)
-    a.pintar_pad(img)
-    cv2.imshow("prueba", img)
+    #img=cv2.imread("pruebas/p1.jpg")
+    #img, x, y, h, w=a.localizar_PCB(img)
+   # a.offset(offx=x, offy=y)
+   # a.reescalar(h, w)
+   # a.pintar_linea(img)
+   # a.pintar_ruta(img)
+   # a.pintar_via(img)
+   # a.pintar_pad(img)
+   # cv2.imshow("prueba", img)
    # cv2.imshow("threshold2", imgthreshold)
     
-    cv2.waitKey(0)
+    #cv2.waitKey(0)
     #a.escala(3)
     #a.offset(50)
     #_, tam=cap.read()
     #print(tam.shape[0])
     #a.offset(offx=round(float(tam.shape[0]/2)), offy=round(float(tam.shape[1]/2)))
     #blanco=np.ones((700,1000,3),dtype=np.uint8)
-    #while True:
-     #   ret, image=cap.read()
-      #  a.pintar_linea(image)
-       # a.pintar_ruta(image)
-     #   cv2.imshow("prueba", image)
-      #  tec=cv2.waitKey(1)
-       # if tec==27:
-        #    break
+    while True:
+        ret, imagen=cap.read()
+        if ret==False:
+            print("ERROR")
+            break
+        img, x, y, h, w=a.localizar_PCB(imagen)
+        if img!="Error":
+            a.offset(offx=x, offy=y)
+            a.reescalar(h, w)
+            a.pintar_linea(img)
+            a.pintar_ruta(img)
+            a.pintar_via(img)
+            a.pintar_pad(img)
 
-    #cap.release()
-    #cv2.destroyAllWindows()
+        cv2.imshow("prueba", img)
+        tec=cv2.waitKey(100)
+        if tec==27:
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
